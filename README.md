@@ -28,7 +28,7 @@ Anthropic, OpenRouter, Groq, Ollama, Qwen, etc.) con control de consumo igual.
 - **Sin parseo de markdown** — se ve el texto tal cual, `**negrita**` como está escrito
 - **Menús que se cierran solos** tras la acción
 - **Enlaces / bookmarks** con submenús, en la barra superior y en el sidebar
-- **📢 Novedades** — panel de noticias que publicas tú editando un JSON en GitHub: se actualiza sin redeploy, con marcado de leído/no leído
+- **Novedades** — panel de noticias con marcado de leído/no leído
 - **Exportar conversación** — .txt, .md, .html y PDF (vía impresión del navegador)
 - **Atajos de teclado** — Ctrl+K buscar, Esc cerrar, Enter enviar
 - **UI adaptativa** — móvil, tablet, PC, cualquier navegador
