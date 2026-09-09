@@ -1,0 +1,25 @@
+{
+  "name": "ai-chat-pro",
+  "version": "0.88",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "cloudflare": {
+    "bindings": {
+      "AUTH_PASSWORD": {
+        "description": "Contraseña para proteger la interfaz. Vacío = acceso libre."
+      },
+      "AUTH_SECRET": {
+        "description": "Cadena aleatoria larga. Firma cookies y cifra la config en R2. Genera con openssl rand -hex 32 o en un generador de contraseñas. Imprescindible."
+      },
+      "EX_KEY_EJEMPLO": {
+        "description": "EJEMPLO INVÁLIDO, deja vacío. Muestra el patrón EX_* para secrets avanzados de storage externo. La vía normal se configura cifrada en R2 desde el panel, sin redeploy."
+      }
+    }
+  }
+}
