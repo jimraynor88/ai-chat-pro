@@ -1,0 +1,17 @@
+name = "ai-chat-pro"
+main = "src/index.js"
+compatibility_date = "2026-09-06"
+
+[ai]
+binding = "AI"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "ia-chat"
+
+[vars]
+APP_NAME = "AI Chat Pro v.0.88 By Jim88.de"
+LANG = "es"
+
+[triggers]
+crons = ["10 0 * * *"]
