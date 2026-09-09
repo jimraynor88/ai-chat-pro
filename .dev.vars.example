@@ -1,0 +1,4 @@
+AUTH_PASSWORD=pon-tu-contraseña
+AUTH_SECRET=pon-aqui-una-cadena-aleatoria-larga
+# Opcionales, solo p desarrollo local, patrón de secrets avanzados:
+# EX_KEY_EJEMPLO=
