@@ -112,6 +112,108 @@ function parseGemini(obj) {
   return msgs.length ? [{ title: "Gemini (Takeout)", source: "Gemini", messages: msgs }] : null;
 }
 
+
+function parseDeepSeek(obj) {
+  var list;
+
+  // Admite tanto una conversación como una lista de mensajes.
+  if (Array.isArray(obj) && obj.length && obj[0] && obj[0].role) {
+    list = [{ title: "DeepSeek", messages: obj }];
+  } else {
+    list = Array.isArray(obj) ? obj : [obj];
+  }
+
+  var out = [];
+
+  list.forEach(function(c) {
+    if (!c || !Array.isArray(c.messages)) return;
+
+    // Detectar la estructura característica de DeepSeek.
+    var isDeepSeek = c.messages.some(function(m) {
+      return m &&
+        /^(USER|ASSISTANT)$/i.test(String(m.role || "")) &&
+        (Array.isArray(m.fragments) || m.content !== undefined);
+    });
+
+    if (!isDeepSeek) return;
+
+    var raw = c.messages;
+
+    // Reconstruir la conversación activa si hay ramificaciones.
+    if (c.current_message_id != null) {
+      var byId = Object.create(null);
+
+      raw.forEach(function(m) {
+        if (m && m.id != null) {
+          byId[String(m.id)] = m;
+        }
+      });
+
+      var path = [];
+      var seen = Object.create(null);
+      var cur = byId[String(c.current_message_id)];
+
+      while (cur && cur.id != null && !seen[String(cur.id)]) {
+        seen[String(cur.id)] = true;
+        path.unshift(cur);
+
+        cur = cur.parent_id == null
+          ? null
+          : byId[String(cur.parent_id)];
+      }
+
+      if (path.length) raw = path;
+    }
+
+    var messages = [];
+
+    raw.forEach(function(m) {
+      if (!m) return;
+
+      var role = String(m.role || "").toUpperCase();
+
+      if (role !== "USER" && role !== "ASSISTANT") return;
+
+      // Los usuarios utilizan REQUEST.
+      // Las respuestas finales utilizan RESPONSE.
+      // THINK y TOOL_* se excluyen deliberadamente.
+      var wantedType = role === "USER" ? "REQUEST" : "RESPONSE";
+      var content = "";
+
+      (Array.isArray(m.fragments) ? m.fragments : []).forEach(function(f) {
+        if (f && f.type === wantedType && typeof f.content === "string") {
+          content += (content ? "\n" : "") + f.content;
+        }
+      });
+
+      // Compatibilidad con mensajes que tengan content directamente.
+      if (!content && typeof m.content === "string") {
+        content = m.content;
+      }
+
+      if (!content.trim()) return;
+
+      var ts = m.inserted_at
+        ? Date.parse(m.inserted_at)
+        : Date.now();
+
+      messages.push(normMsg(role.toLowerCase(), content, ts));
+    });
+
+    if (messages.length) {
+      out.push({
+        title: c.title || "DeepSeek",
+        source: "DeepSeek",
+        createdAt: c.inserted_at || c.created_at || "",
+        messages: messages
+      });
+    }
+  });
+
+  return out.length ? out : null;
+}
+
+
 function parseGeneric(obj) {
   if (Array.isArray(obj) && obj.length && obj[0] && obj[0].role && obj[0].content) {
     return [{ title: obj[0].title || "Importado", source: obj[0].source || "IA", messages: obj.map(function(m) { return normMsg(m.role, m.content, m.timestamp); }) }];
@@ -145,13 +247,26 @@ function impParseText(text, fname) {
       if (!l) return;
       try { arr.push(JSON.parse(l)); } catch (e) {}
     });
-    if (arr.length && arr[0] && arr[0].role) found = [{ title: String(fname).replace(/\\.[^.]+$/, ""), source: "jsonl", messages: arr.map(function(m) { return normMsg(m.role, m.content, m.timestamp); }) }];
+
+if (arr.length && arr[0] && arr[0].role) {
+  var jsonlTitle = String(fname).replace(/\\.[^.]+$/, "");
+
+  found = parseDeepSeek({
+    title: jsonlTitle,
+    messages: arr
+  }) || [{
+    title: jsonlTitle,
+    source: "jsonl",
+    messages: arr.map(function(m) {
+      return normMsg(m.role, m.content, m.timestamp);
+    })
+  }];
+}
   }
   if (!found) {
     try {
       var obj = JSON.parse(stripFences(text));
-      found = parseChatGPT(obj) || parseClaude(obj) || parseGemini(obj) || parseGeneric(obj);
-    } catch (e) { found = null; }
+found = parseChatGPT(obj) || parseClaude(obj) || parseGemini(obj) || parseDeepSeek(obj) || parseGeneric(obj);    } catch (e) { found = null; }
   }
   if (!found && /\\.(md|txt)$/i.test(fname)) found = parseMarkdown(text, fname);
   if (found) { impFound = impFound.concat(found); renderImpFound(); }
