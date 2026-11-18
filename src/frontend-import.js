@@ -112,27 +112,27 @@ function parseGemini(obj) {
   return msgs.length ? [{ title: "Gemini (Takeout)", source: "Gemini", messages: msgs }] : null;
 }
 
-// --- FUNCIÓN PARA DEEPSEEK (AGREGADO) ---
 function parseDeepSeek(obj) {
-  // Lógica específica para el JSON de DeepSeek
+  // Parseador específico para DeepSeek (JSON)
   if (!obj || !Array.isArray(obj.messages)) return null;
 
   var msgs = [];
   
   obj.messages.forEach(function(m) {
-    // 1. Normalizar roles (DeepSeek usa "USER" y "ASSISTANT" mayúsculas)
+    // 1. Normalizar roles (DeepSeek usa USER / ASSISTANT mayúsculas)
     var role = String(m.role || "").toUpperCase();
     var isAssist = (role.indexOf("ASSIST") >= 0);
     var finalRole = isAssist ? "assistant" : "user";
     
-    // 2. Obtener contenido del array de fragments
-    // Filtramos los archivos tipo "FILE" para no incluir rutas de PDF
+    // 2. Obtener contenido de los fragments
     var content = "";
     if (Array.isArray(m.fragments)) {
+      // Filtramos los archivos tipo "FILE" para no arrastrar rutas de PDF
+      // y unimos todo en un solo bloque.
       content = m.fragments
         .filter(function(f) { return f.type !== "FILE"; })
         .map(function(f) { return String(f.content || "").trim(); })
-        .join("\\n"); // Unimos el texto con salto de línea
+        .join("\\n");
     }
 
     // 3. Guardar si es un mensaje válido
@@ -192,7 +192,7 @@ function impParseText(text, fname) {
   if (!found) {
     try {
       var obj = JSON.parse(stripFences(text));
-      // Orden de verificación: Primero DeepSeek, luego otros
+      // Prioridad: 1. DeepSeek, 2. ChatGPT, 3. Claude, 4. Gemini, 5. Generic
       found = parseDeepSeek(obj) || parseChatGPT(obj) || parseClaude(obj) || parseGemini(obj) || parseGeneric(obj);
     } catch (e) { found = null; }
   }
