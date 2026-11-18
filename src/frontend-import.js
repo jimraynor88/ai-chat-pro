@@ -144,7 +144,6 @@ function parseDeepSeek(obj) {
     }
   });
 
-  // Si no encontramos mensajes, retornamos null para probar otros parsers
   if (!msgs.length) return null;
 
   return [{
