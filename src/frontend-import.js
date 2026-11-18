@@ -112,6 +112,48 @@ function parseGemini(obj) {
   return msgs.length ? [{ title: "Gemini (Takeout)", source: "Gemini", messages: msgs }] : null;
 }
 
+function parseDeepSeek(obj) {
+  // Lógica adaptada para DeepSeek (JSON exportado desde Settings)
+  if (!obj || !Array.isArray(obj.messages)) return null;
+
+  var msgs = [];
+  
+  obj.messages.forEach(function(m) {
+    // 1. Mapear roles (DeepSeek usa "USER" y "ASSISTANT" strictos)
+    var role = String(m.role || "").toUpperCase();
+    var finalRole = (role.indexOf("ASSIST") >= 0) ? "assistant" : "user";
+    
+    // 2. Obtener contenido de los fragments
+    var content = "";
+    if (Array.isArray(m.fragments)) {
+      // Filtramos los archivos tipo "FILE" para no arrastrar rutas raras
+      // y unimos el resto (REQUEST, THINK, RESPONSE) en un solo bloque
+      content = m.fragments
+        .filter(function(f) { return f.type !== "FILE"; })
+        .map(function(f) { return String(f.content || "").trim(); })
+        .join("\n");
+    }
+
+    // Validamos que haya texto para guardar el mensaje
+    if (content) {
+      msgs.push({
+        role: finalRole,
+        content: content,
+        timestamp: Date.parse(m.inserted_at) || (m.updated_at ? Date.parse(m.updated_at) : Date.now())
+      });
+    }
+  });
+
+  // Si no encontramos mensajes, retornamos null para probar otros parsers
+  if (!msgs.length) return null;
+
+  return [{
+    title: String(obj.title || "DeepSeek").replace(/\.json$/i, ""),
+    source: "DeepSeek",
+    messages: msgs
+  }];
+}
+
 function parseGeneric(obj) {
   if (Array.isArray(obj) && obj.length && obj[0] && obj[0].role && obj[0].content) {
     return [{ title: obj[0].title || "Importado", source: obj[0].source || "IA", messages: obj.map(function(m) { return normMsg(m.role, m.content, m.timestamp); }) }];
@@ -150,7 +192,8 @@ function impParseText(text, fname) {
   if (!found) {
     try {
       var obj = JSON.parse(stripFences(text));
-      found = parseChatGPT(obj) || parseClaude(obj) || parseGemini(obj) || parseGeneric(obj);
+      // AQUI se añade parseDeepSeek al orden de verificacion
+      found = parseChatGPT(obj) || parseClaude(obj) || parseGemini(obj) || parseDeepSeek(obj) || parseGeneric(obj);
     } catch (e) { found = null; }
   }
   if (!found && /\\.(md|txt)$/i.test(fname)) found = parseMarkdown(text, fname);
