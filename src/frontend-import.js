@@ -182,7 +182,7 @@ function parseDeepSeek(obj) {
 
       (Array.isArray(m.fragments) ? m.fragments : []).forEach(function(f) {
         if (f && f.type === wantedType && typeof f.content === "string") {
-          content += (content ? "\n" : "") + f.content;
+          content += (content ? "\\n" : "") + f.content;
         }
       });
 
