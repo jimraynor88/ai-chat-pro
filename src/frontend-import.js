@@ -62,9 +62,9 @@ function impBindFiles() {
 
 function stripFences(s) {
   var t = String(s).trim();
-  var i = t.indexOf("\\`\\`\\`");
+  var i = t.indexOf("\`\`\`");
   if (i >= 0) {
-    var m = t.slice(i).match(/^\\`\\`\\`(?:json)?\\s*([\\s\\S]*)\\s*\\`\\`\\`\\s*$/);
+    var m = t.slice(i).match(/^\`\`\`(?:json)?\\s*([\\s\\S]*)\\s*\`\`\`\s*$/);
     if (m) return m[1].trim();
   }
   return t;
@@ -112,48 +112,6 @@ function parseGemini(obj) {
   return msgs.length ? [{ title: "Gemini (Takeout)", source: "Gemini", messages: msgs }] : null;
 }
 
-function parseDeepSeek(obj) {
-  // Parseador específico para DeepSeek (JSON)
-  if (!obj || !Array.isArray(obj.messages)) return null;
-
-  var msgs = [];
-  
-  obj.messages.forEach(function(m) {
-    // 1. Normalizar roles (DeepSeek usa USER / ASSISTANT mayúsculas)
-    var role = String(m.role || "").toUpperCase();
-    var isAssist = (role.indexOf("ASSIST") >= 0);
-    var finalRole = isAssist ? "assistant" : "user";
-    
-    // 2. Obtener contenido de los fragments
-    var content = "";
-    if (Array.isArray(m.fragments)) {
-      // Filtramos los archivos tipo "FILE" para no arrastrar rutas de PDF
-      // y unimos todo en un solo bloque.
-      content = m.fragments
-        .filter(function(f) { return f.type !== "FILE"; })
-        .map(function(f) { return String(f.content || "").trim(); })
-        .join("\\n");
-    }
-
-    // 3. Guardar si es un mensaje válido
-    if (content) {
-      msgs.push({
-        role: finalRole,
-        content: content,
-        timestamp: Date.parse(m.inserted_at) || Date.now()
-      });
-    }
-  });
-
-  if (!msgs.length) return null;
-
-  return [{
-    title: String(obj.title || "DeepSeek").replace(/\\.json$/i, ""),
-    source: "DeepSeek",
-    messages: msgs
-  }];
-}
-
 function parseGeneric(obj) {
   if (Array.isArray(obj) && obj.length && obj[0] && obj[0].role && obj[0].content) {
     return [{ title: obj[0].title || "Importado", source: obj[0].source || "IA", messages: obj.map(function(m) { return normMsg(m.role, m.content, m.timestamp); }) }];
@@ -192,8 +150,7 @@ function impParseText(text, fname) {
   if (!found) {
     try {
       var obj = JSON.parse(stripFences(text));
-      // Prioridad: 1. DeepSeek, 2. ChatGPT, 3. Claude, 4. Gemini, 5. Generic
-      found = parseDeepSeek(obj) || parseChatGPT(obj) || parseClaude(obj) || parseGemini(obj) || parseGeneric(obj);
+      found = parseChatGPT(obj) || parseClaude(obj) || parseGemini(obj) || parseGeneric(obj);
     } catch (e) { found = null; }
   }
   if (!found && /\\.(md|txt)$/i.test(fname)) found = parseMarkdown(text, fname);
