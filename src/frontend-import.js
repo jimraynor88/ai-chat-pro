@@ -122,71 +122,18 @@ function parseGeneric(obj) {
   return null;
 }
 
-function impParseText(text, fname) {
-  var found = null;
-  if (/\.jsonl?$/i.test(fname)) {
-    // ... código jsonl existente ...
-  }
-  if (!found) {
-    try {
-      var obj = JSON.parse(stripFences(text));
-      // Añadimos parseDeepSeek aquí tras parseGeneric
-      found = parseChatGPT(obj) || parseClaude(obj) || parseGemini(obj) || parseDeepSeek(obj) || parseGeneric(obj); 
-    } catch (e) { found = null; }
-  }
-  if (!found && /\.?(md|txt)$/i.test(fname)) found = parseMarkdown(text, fname);
-  if (found) { impFound = impFound.concat(found); renderImpFound(); }
-}
-
-// --- NUEVA FUNCIÓN PARA DEEPSEEK ---
-
-function parseDeepSeek(obj) {
-  // Objeto Root esperado: { title, messages: [{ role, fragments: [...], inserted_at }] }
-  if (!obj || !Array.isArray(obj.messages)) return null;
-
-  var msgs = [];
-  
-  // Iteramos cada mensaje
-  obj.messages.forEach(function(m) {
-    // 1. Mapear roles: DeepSeek usa "USER" y "ASSISTANT" (mayúsculas)
-    var roleStr = String(m.role || "").toUpperCase();
-    var roleFinal = (roleStr.indexOf("ASSIST") >= 0) ? "assistant" : "user";
-    
-    // 2. Obtener contenido: DeepSeek usa 'fragments', no 'content' directo
-    var content = "";
-    
-    if (Array.isArray(m.fragments)) {
-      // Filtramos archivos uuid innecesarios y unimos el resto
-      // TYPE: REQUEST (Input usuario), THINK (Penumbra), RESPONSE (Respuesta real)
-      var fragmentsText = m.fragments
-        .filter(function(f) { return f.type !== "FILE"; }) // Opcional: Ignorar rutas de archivos
-        .map(function(f) { return String(f.content || "").trim(); })
-        .join("\n"); // Unimos todas las partes con salto de línea
-      
-      content = fragmentsText;
-    }
-
-    // Validar que el mensaje tenga texto
-    if (content) {
-      msgs.push({
-        role: roleFinal,
-        content: content,
-        timestamp: m.inserted_at && !isNaN(Date.parse(m.inserted_at)) 
-                   ? Date.parse(m.inserted_at) 
-                   : (m.updated_at ? Date.parse(m.updated_at) : Date.now())
-      });
-    }
+function parseMarkdown(text, fname) {
+  var re = /^\\s*(?:#{1,6}\\s*)?(?:\\*\\*)?(You|Tú|Human|Usuario|Assistant|IA|ChatGPT|Claude|Gemini|Grok|DeepSeek|Modelo)\\s*(?:\\*\\*)?[:\\-–]\\s*(?:\\*\\*)?\\s*(.*)$/i;
+  var aiRe = /^(Assistant|IA|ChatGPT|Claude|Gemini|Grok|DeepSeek|Modelo)$/i;
+  var msgs = [], cur = null;
+  String(text).split(/\\r?\\n/).forEach(function(l) {
+    var m = l.match(re);
+    if (m) { if (cur) msgs.push(cur); cur = { role: aiRe.test(m[1]) ? "assistant" : "user", content: m[2].trim() }; }
+    else if (cur && l.trim()) cur.content += "\\n" + l.trim();
   });
-
-  if (msgs.length) {
-    return [{
-      title: String(obj.title || "DeepSeek").replace(/\.json$/i, ""),
-      source: "DeepSeek",
-      messages: msgs
-    }];
-  }
-  
-  return null;
+  if (cur) msgs.push(cur);
+  if (msgs.length < 2) return null;
+  return [{ title: String(fname).replace(/\\.[^.]+$/, "") || "Importado", source: "md", messages: msgs.map(function(m) { return normMsg(m.role, m.content); }) }];
 }
 
 function impParseText(text, fname) {
