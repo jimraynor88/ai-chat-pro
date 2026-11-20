@@ -20,6 +20,8 @@ function api(path, opts) {
   });
 }
 
+try { state.foldOpen = JSON.parse(localStorage.getItem("foldOpen") || "{}"); } catch (e) { state.foldOpen = {}; }
+
 function fetchState() {
   return api("/api/state").then(function(d) {
     state.conversations = d.conversations || [];

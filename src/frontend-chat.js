@@ -121,7 +121,15 @@ function sendMessage() {
   var inp = document.getElementById("input");
   var text = inp.value.trim();
   if (!text && !state.pendingFiles.length) return;
-  if (!state.current) { newConversation(); return; }
+  if (!state.current) {
+    state.queue.push({ text: text, files: state.pendingFiles.slice() });
+    state.pendingFiles = [];
+    inp.value = "";
+    inp.style.height = "auto";
+    renderChips();
+    newConversation().then(processQueue);   // ← newConversation debe devolver la promesa
+    return;
+  }
   inp.value = "";
   inp.style.height = "auto";
   state.queue.push({ text: text, files: state.pendingFiles.slice() });
@@ -136,8 +144,24 @@ function processQueue() {
   state.processing = true;
   renderStatusChip();
   var item = state.queue.shift();
-  sendOne(item).then(processQueue);
+  sendOne(item)
+    .catch(function(e) {
+      console.error("sendOne falló:", e);
+      addMsg("error", T.error_connection + " " + (e && e.message || e));
+    })
+    .then(function() {
+      state.processing = false;
+      renderStatusChip();
+      processQueue();
+    });
 }
+
+return chain.then(function() {
+  // ...tu lógica actual...
+}).catch(function(e) {
+  document.getElementById("upload-progress").textContent = "";
+  addMsg("error", T.error_connection + " " + (e && e.message || e));
+});
 
 function typeErr(code) {
   if (code === "type:blocked") return T.file_type_blocked;
