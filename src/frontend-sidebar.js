@@ -21,7 +21,7 @@ function convItemHtml(c, depth) {
 }
 
 function folderItemHtml(f, depth) {
-  var open = state.foldOpen[f.id] !== false;
+  var open = state.foldOpen[f.id] === true;
   var count = state.conversations.filter(function(c) { return c.folderId === f.id; }).length;
   var h = '<div class="folder-item" style="padding-left:' + (12 + depth * 14) + 'px" onclick="toggleFolder(\\'' + f.id + '\\')">';
   h += '<span class="conv-color ' + (f.color || "none") + '"></span>';
@@ -82,7 +82,8 @@ function colorRowHtml(cur, fn, id) {
 }
 
 function toggleFolder(fid) {
-  state.foldOpen[fid] = state.foldOpen[fid] === false ? true : false;
+  state.foldOpen[fid] = !state.foldOpen[fid];
+  try { localStorage.setItem("foldOpen", JSON.stringify(state.foldOpen)); } catch (e) {}
   renderSidebar();
 }
 
@@ -145,13 +146,14 @@ function deleteFolder(fid) {
 }
 
 function newConversation() {
-  api("/api/conversation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: document.getElementById("model").value }) }).then(function(conv) {
+  return api("/api/conversation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: document.getElementById("model").value }) }).then(function(conv) {
     state.current = conv;
     document.getElementById("model").value = conv.model;
     syncAccept();
-    fetchState().then(function() { renderChat(); renderChips(); if (isMobile()) closeMobileSidebar(); });
+    return fetchState().then(function() { renderChat(); renderChips(); if (isMobile()) closeMobileSidebar(); });
   });
 }
+
 function newConversationInFolder(fid) {
   closeCtxMenu();
   api("/api/conversation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: document.getElementById("model").value, folderId: fid }) }).then(function(conv) {
