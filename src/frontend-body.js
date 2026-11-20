@@ -49,11 +49,13 @@ export function getHtmlBody(t) {
     </div>
     <div class="file-chips" id="file-chips"></div>
     <div class="upload-progress" id="upload-progress"></div>
-    <div id="input-area">
-      <button id="upload-btn" onclick="document.getElementById('file-input').click()">📎</button>
+ <div id="input-area">
+      <div class="input-left">
+        <button id="upload-btn" onclick="document.getElementById('file-input').click()">📎</button>
+        <button id="clear" onclick="clearChat()">🗑</button>
+      </div>
       <input type="file" id="file-input" multiple>
       <textarea id="input" rows="1" placeholder="${t.write_message}"></textarea>
-      <button id="clear" onclick="clearChat()">🗑</button>
       <button id="send" onclick="sendMessage()">➤</button>
     </div>
   </div>
