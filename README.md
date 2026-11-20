@@ -185,7 +185,7 @@ Cada conversación se exporta a:
 ## 📁 Estructura del proyecto
 
 ```
-ai-chat-pro2/
+ai-chat-pro/
 ├── src/
 │   ├── index.js              ← Router principal
 │   ├── models.js             ← Modelos CF + tipos de archivo + neuronas
@@ -278,7 +278,7 @@ Los tipos de archivo que acepta cada modelo se ven en la **Guía de modelos**.
 
 ```
 git clone https://github.com/jimraynor88/ai-chat-pro.git
-cd ai-chat-pro2
+cd ai-chat-pro
 npm install
 npx wrangler r2 bucket create ia-chat
 npx wrangler deploy
