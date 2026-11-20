@@ -16,9 +16,11 @@ function api(path, opts) {
   opts = opts || {};
   return fetch(path, opts).then(function(r) {
     if (r.status === 401) { window.location.href = "/"; return { error: "unauth" }; }
-    return r.json();
+   return r.json();
   });
 }
+
+try { state.foldOpen = JSON.parse(localStorage.getItem("foldOpen") || "{}"); } catch (e) { state.foldOpen = {}; }
 
 function fetchState() {
   return api("/api/state").then(function(d) {
