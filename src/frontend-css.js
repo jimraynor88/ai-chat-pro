@@ -118,16 +118,6 @@ input,textarea,select{font-family:inherit;outline:none;color:inherit}
 #clear{background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:15px;min-height:42px}
 #clear:hover{color:var(--text)}
 #file-input{display:none}
-.input-left{display:flex;flex-direction:column;gap:6px;flex-shrink:0;justify-content:flex-end}
-.input-left #upload-btn,.input-left #clear{
-  width:40px;height:34px;min-height:34px;padding:0;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--bg);color:var(--muted);
-  border:1px solid var(--border);border-radius:8px;
-  font-size:16px;position:relative;
-}
-.input-left #upload-btn:hover{color:var(--accent);border-color:var(--accent)}
-.input-left #clear:hover{color:var(--text);border-color:var(--muted)}
 @media(max-width:768px){
 :root{--sbw:clamp(280px,86vw,340px)}
 #app{grid-template-columns:0 minmax(0,1fr)}

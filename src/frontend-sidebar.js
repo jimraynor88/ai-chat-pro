@@ -21,7 +21,7 @@ function convItemHtml(c, depth) {
 }
 
 function folderItemHtml(f, depth) {
-  var open = state.foldOpen[f.id] !== true;
+  var open = state.foldOpen[f.id] !== false;
   var count = state.conversations.filter(function(c) { return c.folderId === f.id; }).length;
   var h = '<div class="folder-item" style="padding-left:' + (12 + depth * 14) + 'px" onclick="toggleFolder(\\'' + f.id + '\\')">';
   h += '<span class="conv-color ' + (f.color || "none") + '"></span>';
@@ -82,8 +82,7 @@ function colorRowHtml(cur, fn, id) {
 }
 
 function toggleFolder(fid) {
-  state.foldOpen[fid] = !state.foldOpen[fid];
-  try { localStorage.setItem("foldOpen", JSON.stringify(state.foldOpen)); } catch (e) {}
+  state.foldOpen[fid] = state.foldOpen[fid] === false ? true : false;
   renderSidebar();
 }
 
@@ -152,9 +151,7 @@ function newConversation() {
     syncAccept();
     fetchState().then(function() { renderChat(); renderChips(); if (isMobile()) closeMobileSidebar(); });
   });
-  return api("/api/conversation", { ... }).then(function(conv) { ... });
 }
-
 function newConversationInFolder(fid) {
   closeCtxMenu();
   api("/api/conversation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: document.getElementById("model").value, folderId: fid }) }).then(function(conv) {
