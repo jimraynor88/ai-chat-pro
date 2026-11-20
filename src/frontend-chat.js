@@ -121,7 +121,15 @@ function sendMessage() {
   var inp = document.getElementById("input");
   var text = inp.value.trim();
   if (!text && !state.pendingFiles.length) return;
-  if (!state.current) { newConversation(); return; }
+  if (!state.current) {
+    state.queue.push({ text: text, files: state.pendingFiles.slice() });
+    state.pendingFiles = [];
+    inp.value = "";
+    inp.style.height = "auto";
+    renderChips();
+    newConversation().then(processQueue);
+    return;
+  }
   inp.value = "";
   inp.style.height = "auto";
   state.queue.push({ text: text, files: state.pendingFiles.slice() });
@@ -136,7 +144,17 @@ function processQueue() {
   state.processing = true;
   renderStatusChip();
   var item = state.queue.shift();
-  sendOne(item).then(processQueue);
+  sendOne(item).then(function() {
+    state.processing = false;
+    renderStatusChip();
+    processQueue();
+  }, function(e) {
+    console.error("sendOne fallo:", e);
+    addMsg("error", T.error_connection + " " + (e && e.message || e));
+    state.processing = false;
+    renderStatusChip();
+    processQueue();
+  });
 }
 
 function typeErr(code) {
